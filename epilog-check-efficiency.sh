@@ -1,40 +1,19 @@
 #!/bin/bash
 
-# ******* TO DEVELOPMENT CHECKING ******
-
-#SLURM_JOB_ID=1618902
-#SLURM_JOB_USER="irubia"
-#SLURM_JOB_ACCOUNT="rg"
-#SLURM_JOB_EXIT_CODE=0
-
-#SLURM_JOB_ID=1663420
-#SLURM_ARRAY_JOB_ID=1663420
-#SLURM_ARRAY_TASK_ID=10
-#SLURM_JOB_USER="emre"
-#SLURM_JOB_ACCOUNT="ibi"
-#SLURM_JOB_EXIT_CODE=0
-
-#SLURM_JOB_ID=4062236
-#SLURM_ARRAY_JOB_ID=3434764
-#SLURM_ARRAY_TASK_ID=1410
-#SLURM_JOB_USER="xfarre"
-#SLURM_JOB_ACCOUNT="xfarre"
-#SLURM_JOB_EXIT_CODE=0
-
-# Variables de configuraci√ ...
+# Variables de configuraci√É ...
 
 DEBUG=false  
 
-# Si l'us de la memoria feta servir est‡† per sota d'aquest % avisem a l'usuari
+# Si l'us de la memoria feta servir est√†¬† per sota d'aquest % avisem a l'usuari
 MIN_MEM_USED=80
 
-# Memoria mÌnima que ha de demanar l'usuari per que es faci aquest control en MB.
+# Memoria m√≠nima que ha de demanar l'usuari per que es faci aquest control en MB.
 MIN_MEM=8192 # Mb
 
-# Walltime m‡nim de un job per control∑lar la memÛria feta servir (en segons)
+# Walltime m√†nim de un job per control¬∑lar la mem√≥ria feta servir (en segons)
 MIN_WALLTIME=5 # Minutes 
 
-# Temps m√†xim d'espera si el job est√† encara en running en <segons>.<milisegons>
+# Temps m√É¬†xim d'espera si el job est√É¬† encara en running en <segons>.<milisegons>
 MAX_WAIT_TIME=2.00  # Seconds
 
 # Labs to be checked (separats per un espai). Si ALL, all labs are going to be monitorized.
@@ -51,16 +30,16 @@ EV_SLURM_CONF="/etc/slurm/slurm.conf"
 # Fitxer de log 
 LOGFILE=/var/log/slurm/epilog-mem-efficiency.log
 
-# On guardem la info dels arrayjobs que estem control∑lant
+# On guardem la info dels arrayjobs que estem control¬∑lant
 PATH_ARRAYJOBS=/etc/slurm/epilog/arrayjobs
 
-# Fitxer que fem servir com a sem√†for
+# Fitxer que fem servir com a sem√É¬†for
 LOCK_FILE="/etc/slurm/epilog/arrayjobs.lock"
 
-# Fitxer auxiliar per la generaciÛ del cos del mail
+# Fitxer auxiliar per la generaci√≥ del cos del mail
 EMAILBODY=/tmp/epilog-mem-efficiency
 
-# AdreÁa de mail dels tÈcnics
+# Adre√ßa de mail dels t√©cnics
 IT_RECIPIENT="miguelangel.sanchez@upf.edu"
 #IT_RECIPIENT="sit@upf.edu"
 
@@ -68,12 +47,12 @@ IT_RECIPIENT="miguelangel.sanchez@upf.edu"
 LDAP_SERVER="sit-ldap.s.upf.edu"
 LDAP_BASEDN="dc=upf,dc=edu"
 
-# I aquÌ≠ comencem ...
+# I aqu√≠¬≠ comencem ...
 
-# Per controlÔøΩlar si es un array job
+# Per control√Ø¬ø¬Ωlar si es un array job
 IS_ARRAY=false
 
-# Miro si es un array job ja que llavors hem de fer una preparaciÛ extra del jobid
+# Miro si es un array job ja que llavors hem de fer una preparaci√≥ extra del jobid
 if [ ${SLURM_ARRAY_JOB_ID} ]; then
         JOBID=${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
 	IS_ARRAY=true
@@ -81,7 +60,7 @@ else
         JOBID=${SLURM_JOB_ID}
 fi
 
-# Mirem si el job es de uns dels labos que hem de control∑lar. 
+# Mirem si el job es de uns dels labos que hem de control¬∑lar. 
 LABS_TO_CHECK=`echo "${LABS_TO_CHECK}" | sed "s/\s/|/g"`
 if [[ ! "${SLURM_JOB_ACCOUNT}" =~ ^(${LABS_TO_CHECK})$ ]] && [ "${LABS_TO_CHECK}" != "ALL" ]; then
 	# El job no pertany a un dels labos a monitoritzar.
@@ -91,7 +70,7 @@ if [[ ! "${SLURM_JOB_ACCOUNT}" =~ ^(${LABS_TO_CHECK})$ ]] && [ "${LABS_TO_CHECK}
 	exit 0
 fi
 
-# NomÈs mirem els jobs que han acabat bÈ (status=COMPLETED)
+# Nom√©s mirem els jobs que han acabat b√© (status=COMPLETED)
 if [ ${SLURM_JOB_EXIT_CODE} -ne "0" ]; then
 	if [[ "${DEBUG}" == "true" ]]; then
  		echo -e "\nJobID: ${JOBID} -> The job exit code hasn't been 0 (${SLURM_JOB_EXIT_CODE})" >> ${LOGFILE}
@@ -107,12 +86,12 @@ export SLURM_CONF=${EV_SLURM_CONF}
 SEFF_OUTPUT=`${SEFF} -d ${JOBID}`
 
 # Vam detectar que amb alguns jobs, quan s'executa el epilog el job encara no ha acabat del tot. Poder es degut
-# a que el I/O estar  anant lent, que la BBDD del accounting est‡ molt carregada i l'escriptura del accounting est+a
-# en waiting, etc. Si veiem que el job est‡  en aquest estat no fem res.
+# a que el I/O estar  anant lent, que la BBDD del accounting est√† molt carregada i l'escriptura del accounting est+a
+# en waiting, etc. Si veiem que el job est√†  en aquest estat no fem res.
 
 JOB_STATE=`echo "${SEFF_OUTPUT}" | grep "State:" | awk '{ print $2 }'`
 
-# El job ha sigut cancel¬∑lat 
+# El job ha sigut cancel√Ç¬∑lat 
 if [ "${JOB_STATE}" == "CANCELLED" ]; then
 #	if [[ "${DEBUG}" == "true" ]]; then
                 echo -e "\nJobID: ${JOBID} -> The job state is CANCELLED (${SLURM_JOB_EXIT_CODE}:${SLURM_JOB_EXIT_CODE2})" >> ${LOGFILE}
@@ -122,10 +101,10 @@ fi
 
 if [ "${JOB_STATE}" == "RUNNING" ]; then
 
-	# Quan comencem amb precisi√≥de milisegons
+	# Quan comencem amb precisi√É¬≥de milisegons
 	START=$(date +%s.%N)
 	
-	# Mestres el job no estigui com COMPLETED donem voles al bucle, pero com a m√†xim ho 
+	# Mestres el job no estigui com COMPLETED donem voles al bucle, pero com a m√É¬†xim ho 
 	# fem durant MAX_WAIT_TIME temps.
 	until [ "${JOB_STATE}" == "COMPLETED" ]; do
         	JOB_STATE=`seff ${JOBID} | grep "State:" | awk '{ print $2 }'`
@@ -141,10 +120,10 @@ if [ "${JOB_STATE}" == "RUNNING" ]; then
 	fi
 fi
 
-# Ara anem a comprovar si est‡† per sobre del mÌnim % d'us definit com correcte:
+# Ara anem a comprovar si est√†¬† per sobre del m√≠nim % d'us definit com correcte:
 
-# - Aquest bucle poder no cal. Es per saber en quina posiciÛ del la raw info tenin el waltime i la memoria demanda
-# (es per evitar que si hi ha un canvi a la eina seff o al sacct, que sapiguem trobar si ha canviat la posiciÛ d'aquests valors).
+# - Aquest bucle poder no cal. Es per saber en quina posici√≥ del la raw info tenin el waltime i la memoria demanda
+# (es per evitar que si hi ha un canvi a la eina seff o al sacct, que sapiguem trobar si ha canviat la posici√≥ d'aquests valors).
 # Es podria posar el index de on son per hardcode i llestos.
 
 HEADER=`echo "${SEFF_OUTPUT}" | sed -n 1p`
@@ -160,7 +139,7 @@ for i in ${HEADER}; do
         ((++cnt))
 done
 
-# AtenciÛ: si el job no es un array job, he de restar 1 als INDEX_MEM i INDEX_WTIME per que el camp de ArrayJobID no tindr‡†cap valor.
+# Atenci√≥: si el job no es un array job, he de restar 1 als INDEX_MEM i INDEX_WTIME per que el camp de ArrayJobID no tindr√†¬†cap valor.
 if [ ! ${SLURM_ARRAY_JOB_ID} ]; then 
 	((--INDEX_MEM))
 	((--INDEX_WTIME))
@@ -177,11 +156,11 @@ if [ "${RAW_WALLTIME}" -lt "$(( MIN_WALLTIME*60 ))" ]; then
 	exit 0
 fi
 
-# Segon, fem el mateix amb la quantitat de memÛria demanada 
+# Segon, fem el mateix amb la quantitat de mem√≥ria demanada 
 RAW_REQ_MEM=`echo "${SEFF_OUTPUT}" | sed -n 2p | awk -v indice="${INDEX_MEM}" 'BEGIN{OFS=IFS="\t"}{ print $indice }'`
 
 if [ "${RAW_REQ_MEM}" -lt "$(( MIN_MEM*1024 ))" ]; then
-	# No arriba a la memÛria mÌnima que s'ha de demanar, sortim.
+	# No arriba a la mem√≥ria m√≠nima que s'ha de demanar, sortim.
 	if [[ "${DEBUG}" == "true" ]]; then 
 		echo -e "\nJobID: ${JOBID} -> Requested memory ($(( RAW_REQ_MEM/1024 ))Mb) less than Minim Memory (${MIN_MEM}Mb)" >> ${LOGFILE}
 	fi
@@ -191,19 +170,19 @@ fi
 # Tot correcte, ja podem mirar com ha anat el consum de memoria.
 PERCENT_USED=`echo "${SEFF_OUTPUT}" | grep "Memory Efficiency" | awk '{ print $3 }'`
 
-# He de treure el char '%' que est‡† al final:
+# He de treure el char '%' que est√†¬† al final:
 VALUE_USED=${PERCENT_USED::-1}
 
-# Ara comprovem si l'usuari ha fet servir prou memoria, si no es aixÌ≠ li hem d'enviar un mail:
+# Ara comprovem si l'usuari ha fet servir prou memoria, si no es aix√≠¬≠ li hem d'enviar un mail:
 if (( $(echo "${VALUE_USED} < ${MIN_MEM_USED}" |bc -l) )); then
 
-	# Hem d'avisar a l'usuari de que ha fet servir poca memÛria !!, preparem el mail:
+	# Hem d'avisar a l'usuari de que ha fet servir poca mem√≥ria !!, preparem el mail:
 
-	# PrapaciÛ del cos del mail (tmb fem servir aquesta info en el cas de que sigui un job array)
+	# Prapaci√≥ del cos del mail (tmb fem servir aquesta info en el cas de que sigui un job array)
 	MEMREQ=`echo "${SEFF_OUTPUT}" | grep "Memory Efficiency" | awk '{ print $5 $6 }'`
 	MAXRSS=`echo "${SEFF_OUTPUT}" | grep "Memory Utilized" | awk '{ print $3 " " $4 }'`
 
-	# Si surten les unitats del MAXRSS com a EB, vol dir que son KB, es raro nom√s consumir KB  pero pasa,
+	# Si surten les unitats del MAXRSS com a EB, vol dir que son KB, es raro nom√És consumir KB  pero pasa,
 	# ho diu el seff ...
 	MAXRSS=`echo "${MAXRSS}" | sed -e "s/EB/KB/g"`
 
@@ -223,7 +202,7 @@ if (( $(echo "${VALUE_USED} < ${MIN_MEM_USED}" |bc -l) )); then
 
 		# Preparacio del recipient
         	if [[ "${DEBUG}" == "true" ]]; then
-                	# NomÈs avisem als tÈcnics.
+                	# Nom√©s avisem als t√©cnics.
                 	RECIPIENT=${IT_RECIPIENT}
         	else
 			# Li pregunto al LDAP per el email de l'usuari.
@@ -243,7 +222,7 @@ if (( $(echo "${VALUE_USED} < ${MIN_MEM_USED}" |bc -l) )); then
 		rm -f ${EMAILBODY}.${JOBID}
 
         	# Guardem un log de a qui hem avisat
-		SEFF2LOG=`echo "${SEFF_OUTPUT}" | sed '1,2d'`  # Tre√Øem les dos primeres linies que es info de debug
+		SEFF2LOG=`echo "${SEFF_OUTPUT}" | sed '1,2d'`  # Tre√É¬Øem les dos primeres linies que es info de debug
 		echo -e "\nJobID: ${JOBID} -> This job hasn't used the minimal amount of memory. We have sent an email to the user (${RECIPIENT}):\n${SEFF2LOG}\nNodelist: ${SLURM_JOB_NODELIST}" >> ${LOGFILE}
 
 	else
@@ -262,7 +241,7 @@ if (( $(echo "${VALUE_USED} < ${MIN_MEM_USED}" |bc -l) )); then
 	fi
 
 else
-	# Ha fet servir el mÌnim de memoria requerida de la demanada
+	# Ha fet servir el m√≠nim de memoria requerida de la demanada
 	if [[ "${DEBUG}" == "true" ]]; then
 		 echo -e "\nJobID: ${JOBID} -> CONGRATULATIONS !! This job has used the ${VALUE_USED}% of the requested memory (the minimal is ${MIN_MEM_USED}%)" >> ${LOGFILE}
 
@@ -271,13 +250,13 @@ fi
 
 # Abans d'acabar, comprovem si hi ha algun array job amb info pendent d'enviar
 
-# Fiquem un sem√†for per evitar mes de un acces concurrent a aquesta part del
+# Fiquem un sem√É¬†for per evitar mes de un acces concurrent a aquesta part del
 # escript per evitar problemes.
 
-# -> Sem√†for vermell ...
+# -> Sem√É¬†for vermell ...
 
 if [ -f "${LOCK_FILE}" ]; then
-    # Hi ha alguna execuci√ del script del epilog que esta fent ja aquesta comprovacio, sortim.
+    # Hi ha alguna execuci√É del script del epilog que esta fent ja aquesta comprovacio, sortim.
     exit
 else
     if [[ "${DEBUG}" == "true" ]]; then
@@ -286,7 +265,7 @@ else
     touch ${LOCK_FILE}
 fi
 
-# Llistem els fitxers que est·n al directori ${ARRAYJOBS_INFO}
+# Llistem els fitxers que est√°n al directori ${ARRAYJOBS_INFO}
 JARRAY_MONITORED=`ls ${PATH_ARRAYJOBS}`
 
 for i in ${JARRAY_MONITORED}; do
@@ -301,7 +280,7 @@ for i in ${JARRAY_MONITORED}; do
 
 		# Preparacio del recipient
 		if [[ "${DEBUG}" == "true" ]]; then
-                	# NomÈs avisem als tÈcnics.
+                	# Nom√©s avisem als t√©cnics.
                 	RECIPIENT=${IT_RECIPIENT}
         	else
 			# Li pregunto al LDAP per el email de l'usuari.
@@ -334,7 +313,7 @@ for i in ${JARRAY_MONITORED}; do
 	fi
 done
 
-# ... sem√†for en verd.
+# ... sem√É¬†for en verd.
 rm -f ${LOCK_FILE}
 
 exit 0
